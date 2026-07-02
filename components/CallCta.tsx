@@ -10,9 +10,11 @@ const WHATSAPP = "https://wa.me/918310570414";
 export function CallCta({
   className,
   children,
+  onClickCapture,
 }: {
   className?: string;
   children: React.ReactNode;
+  onClickCapture?: React.MouseEventHandler<HTMLAnchorElement>;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -48,7 +50,7 @@ export function CallCta({
 
   return (
     <div className="relative inline-block" ref={wrapRef}>
-      <a href={PHONE_TEL} onClick={handleClick} className={className}>
+      <a href={PHONE_TEL} onClick={handleClick} onClickCapture={onClickCapture} className={className}>
         {children}
       </a>
       <AnimatePresence>

@@ -1,103 +1,214 @@
 "use client";
 
-import Image from "next/image";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check } from "lucide-react";
+import { Header } from "@/components/Header";
 import { CallCta } from "@/components/CallCta";
+import { PILLARS } from "@/lib/clinic-data";
 
-const container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
-};
+const HEADLINE = "Here for your family,\nat every step.";
 
-const item: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-};
+function useTypewriter(text: string, speed = 38, startDelay = 600) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
 
-const PETALS = [
-  { size: 220, style: { top: "-10%", left: "-10%" }, duration: 14 },
-  { size: 160, style: { bottom: "-8%", right: "-5%" }, duration: 18 },
-  { size: 120, style: { bottom: "20%", left: "15%" }, duration: 11 },
-];
+  useEffect(() => {
+    let i = 0;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
 
-export function Hero() {
-  const prefersReduced = useReducedMotion();
+    const timeoutId = setTimeout(() => {
+      intervalId = setInterval(() => {
+        i += 1;
+        setDisplayed(text.slice(0, i));
+        if (i >= text.length) {
+          if (intervalId) clearInterval(intervalId);
+          setDone(true);
+        }
+      }, speed);
+    }, startDelay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [text, speed, startDelay]);
+
+  return { displayed, done };
+}
+
+function useVideoScrub(videoRef: React.RefObject<HTMLVideoElement | null>) {
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let prevX: number | null = null;
+    let duration = 0;
+
+    function onLoadedMetadata() {
+      if (video) duration = video.duration;
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      if (window.innerWidth < 1024) return;
+      if (!video || !duration || !isFinite(duration)) return;
+      if (prevX === null) {
+        prevX = e.clientX;
+        return;
+      }
+      const deltaX = e.clientX - prevX;
+      prevX = e.clientX;
+      const next = video.currentTime + (deltaX / window.innerWidth) * 0.8 * duration;
+      video.currentTime = Math.min(Math.max(next, 0), duration);
+    }
+
+    function onSeeked() {}
+
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
+    if (video.readyState >= 1) duration = video.duration;
+    window.addEventListener("mousemove", onMouseMove);
+    video.addEventListener("seeked", onSeeked);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
+      window.removeEventListener("mousemove", onMouseMove);
+      video.removeEventListener("seeked", onSeeked);
+    };
+  }, [videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (window.innerWidth < 1024) {
+      video.autoplay = true;
+      video.play().catch(() => {});
+    }
+  }, [videoRef]);
+}
+
+function ServicePills() {
+  const [selected, setSelected] = useState<string[]>([]);
+  const options = PILLARS.map((p) => p.label);
+
+  function toggle(label: string) {
+    setSelected((sel) => (sel.includes(label) ? sel.filter((s) => s !== label) : [...sel, label]));
+  }
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-20">
-      <motion.div variants={container} initial={prefersReduced ? "show" : "hidden"} animate="show">
-        <motion.p variants={item} className="mb-3 font-mono text-xs uppercase tracking-widest text-pink-deep">
-          Girinagar · Avalahalli, Bengaluru
-        </motion.p>
-        <motion.h1
-          variants={item}
-          className="font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
-        >
-          One clinic. Every stage of your family&apos;s care.
-        </motion.h1>
-        <motion.p variants={item} className="mt-5 max-w-[46ch] text-lg text-ink-soft">
-          Pediatrics, psychiatry, allergy-asthma and vaccination, under one roof — so you&apos;re not
-          sent across town when your child&apos;s cough turns out to need a different doctor than
-          their check-up.
-        </motion.p>
-        <motion.div variants={item} className="mt-7 flex flex-wrap gap-3.5">
-          <CallCta className="btn-primary">Call to book</CallCta>
-          <a href="#pillars" className="btn-ghost">
-            Explore specialities
-          </a>
-        </motion.div>
-      </motion.div>
+    <div>
+      <h2 className="mb-2 text-2xl font-medium tracking-tight text-ink">What sort of service?</h2>
+      <p className="mb-8 text-ink-soft opacity-85">Select all that apply</p>
 
-      <motion.div
-        initial={prefersReduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-        className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-blush shadow-[0_24px_60px_-24px_rgba(214,37,155,0.35)]"
-      >
-        {!prefersReduced && (
-          <div className="absolute inset-0 z-0" aria-hidden="true">
-            {PETALS.map((p, i) => (
-              <motion.span
-                key={i}
-                className="absolute rounded-full blur-[2px]"
-                style={{
-                  width: p.size,
-                  height: p.size,
-                  opacity: 0.35,
-                  background: "radial-gradient(circle at 35% 35%, var(--pink), transparent 70%)",
-                  ...p.style,
-                }}
-                animate={{ x: [0, 14, 0], y: [0, -10, 0], scale: [1, 1.08, 1] }}
-                transition={{ duration: p.duration, repeat: Infinity, ease: "easeInOut" }}
-              />
-            ))}
-          </div>
+      <div className="mb-6 flex flex-wrap gap-3">
+        {options.map((label) => {
+          const active = selected.includes(label);
+          return (
+            <motion.button
+              key={label}
+              type="button"
+              onClick={() => toggle(label)}
+              whileTap={{ scale: 0.96 }}
+              className={
+                active
+                  ? "flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-ink/10 transform"
+                  : "flex items-center gap-2 rounded-full border border-pink-line bg-white px-5 py-2.5 text-sm font-medium text-ink hover:bg-pink-line/40"
+              }
+            >
+              {label}
+              {active && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex"
+                >
+                  <Check className="h-4 w-4" />
+                </motion.span>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {selected.length === 0 ? (
+          <motion.p
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="text-xs italic text-ink-soft"
+          >
+            Please click to select services above.
+          </motion.p>
+        ) : (
+          <motion.div
+            key="filled"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="overflow-hidden rounded-2xl border border-pink-line bg-[#FAFBF9]"
+          >
+            <div className="flex items-center justify-between gap-4 p-5">
+              <p className="text-sm text-ink">Ready to inquire about: {selected.join(", ")}</p>
+              <CallCta className="whitespace-nowrap text-xs font-semibold uppercase text-pink-deep">
+                Let&apos;s Go
+              </CallCta>
+            </div>
+          </motion.div>
         )}
-        <motion.div
-          className="absolute inset-0"
-          animate={prefersReduced ? undefined : { scale: [1, 1.06, 1] }}
-          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Image
-            src="/images/cover_plyground.png"
-            alt="Children painting together at Olavu Clinic"
-            fill
-            sizes="(min-width: 768px) 45vw, 100vw"
-            className="relative z-10 object-cover"
-            priority
-          />
-        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-semibold text-ink shadow-[0_8px_20px_-8px_rgba(0,0,0,0.3)] backdrop-blur-sm"
-        >
-          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-pink" />
-          A calm, colourful space for kids
-        </motion.div>
-      </motion.div>
-    </section>
+export function Hero() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { displayed, done } = useTypewriter(HEADLINE);
+  useVideoScrub(videoRef);
+
+  return (
+    <div
+      id="top"
+      className="relative flex flex-col overflow-x-hidden bg-white font-sans text-ink antialiased selection:bg-blush selection:text-ink lg:block lg:min-h-screen"
+    >
+      <Header />
+
+      <div className="hidden overflow-hidden bg-neutral-50 pointer-events-none lg:absolute lg:inset-0 lg:z-0 lg:block lg:h-full lg:bg-transparent">
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          preload="auto"
+          src="/videos/hero-scrub.mp4"
+          className="h-full w-full object-cover object-right-bottom"
+        />
+      </div>
+
+      <div className="relative z-10 hidden w-full flex-col bg-white pb-8 lg:flex lg:min-h-screen lg:bg-transparent lg:pb-0">
+        <main id="spade-hero" className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-6 py-12 pt-24">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <h1 className="mb-8 w-full select-none whitespace-pre-wrap text-5xl font-normal leading-[1.08] tracking-tight text-black md:text-6xl lg:text-[76px]">
+              {displayed}
+              {!done && <span className="ml-[2px] inline-block h-[1.1em] w-[2px] animate-blink bg-black align-middle" />}
+            </h1>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <p className="mb-14 max-w-2xl text-lg font-normal leading-relaxed text-ink-soft md:text-xl">
+              Whether it&apos;s a check-up, a question, or a shot that&apos;s due, <br />
+              reach out and we&apos;ll get back to you as soon as possible.
+            </p>
+          </motion.div>
+
+          <ServicePills />
+        </main>
+      </div>
+    </div>
   );
 }

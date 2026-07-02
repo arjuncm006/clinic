@@ -9,7 +9,7 @@ export function Footer() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5 }}
-      className="mx-auto mt-4 grid max-w-6xl gap-8 border-t border-pink-line px-5 pb-24 pt-12 text-sm text-ink-soft sm:grid-cols-[1.4fr_1fr_1fr] sm:px-8 sm:pb-12"
+      className="mx-auto mt-4 grid max-w-6xl gap-8 border-t border-pink-line px-5 pb-24 pt-12 text-sm text-ink-soft sm:grid-cols-[1.4fr_1fr_1fr] sm:px-8 md:pb-12"
     >
       <div>
         <p className="mb-2 font-display text-lg text-ink">Olavu Clinic</p>

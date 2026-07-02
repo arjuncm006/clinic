@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { PILLARS } from "@/lib/clinic-data";
 
 function initials(name: string) {
@@ -16,9 +17,21 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+const TILT_ANGLES = [-8, 6, -5, 9];
+function tiltFor(index: number) {
+  return TILT_ANGLES[index % TILT_ANGLES.length];
+}
+
 export function Pillars() {
-  const [activeKey, setActiveKey] = useState(PILLARS[0].key);
-  const active = PILLARS.find((p) => p.key === activeKey)!;
+  const [active, setActive] = useState(0);
+  const current = PILLARS[active];
+
+  function next() {
+    setActive((p) => (p + 1) % PILLARS.length);
+  }
+  function prev() {
+    setActive((p) => (p - 1 + PILLARS.length) % PILLARS.length);
+  }
 
   return (
     <section id="pillars" className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
@@ -41,79 +54,72 @@ export function Pillars() {
         Four specialities. One continuous record.
       </motion.h2>
 
-      <div className="mt-10 grid gap-8 md:grid-cols-[300px_1fr] md:gap-12">
-        <div
-          role="tablist"
-          aria-label="Clinic specialities"
-          className="relative flex flex-col border-l-2 border-pink-line pl-7"
-        >
-          {PILLARS.map((p) => {
-            const isActive = p.key === activeKey;
-            return (
-              <button
-                key={p.key}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveKey(p.key)}
-                className="relative flex items-center gap-3.5 py-3.5 text-left"
-              >
-                <span className="absolute -left-[1.94rem] grid h-3 w-3 place-items-center">
-                  {isActive ? (
-                    <motion.span
-                      layoutId="pillar-dot"
-                      className="absolute h-3 w-3 rounded-full bg-pink shadow-[0_0_0_4px_var(--blush)]"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      <div className="mt-12 grid gap-12 md:grid-cols-2 md:items-center md:gap-16">
+        <div className="relative mx-auto h-[320px] w-full max-w-sm md:mx-0">
+          <AnimatePresence>
+            {PILLARS.map((p, index) => {
+              const isActive = index === active;
+              return (
+                <motion.div
+                  key={p.key}
+                  initial={{ opacity: 0, scale: 0.9, rotate: tiltFor(index) }}
+                  animate={{
+                    opacity: isActive ? 1 : 0.7,
+                    scale: isActive ? 1 : 0.95,
+                    rotate: isActive ? 0 : tiltFor(index),
+                    zIndex: isActive ? 999 : PILLARS.length + 2 - index,
+                    y: isActive ? [0, -30, 0] : 0,
+                  }}
+                  exit={{ opacity: 0, scale: 0.9, rotate: tiltFor(index) }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className="absolute inset-0 origin-bottom"
+                >
+                  {p.photo ? (
+                    <Image
+                      src={p.photo}
+                      alt={p.doctor}
+                      fill
+                      sizes="(min-width: 768px) 24rem, 90vw"
+                      draggable={false}
+                      className={`rounded-3xl object-cover shadow-[0_20px_50px_-20px_rgba(31,35,64,0.4)] ${p.photoPosition ?? "object-[center_15%]"}`}
                     />
                   ) : (
-                    <span className="h-3 w-3 rounded-full border-2 border-pink-line bg-white" />
+                    <div className="flex h-full w-full items-center justify-center rounded-3xl bg-blush font-mono text-4xl font-semibold text-pink-deep shadow-[0_20px_50px_-20px_rgba(31,35,64,0.4)]">
+                      {initials(p.doctor)}
+                    </div>
                   )}
-                </span>
-                <span>
-                  <strong className={`block text-[1.05rem] ${isActive ? "text-pink-deep" : "text-ink"}`}>
-                    {p.label}
-                  </strong>
-                  <small className="text-sm text-ink-soft">{p.tagline}</small>
-                </span>
-              </button>
-            );
-          })}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-pink-line bg-white p-6 shadow-[0_12px_30px_-14px_rgba(214,37,155,0.22)] sm:p-10">
+        <div className="flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
-              key={active.key}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
+              key={active}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
             >
-              <h3 className="font-display text-2xl font-semibold">{active.title}</h3>
-              <div className="mb-4 mt-4 flex items-center gap-3.5">
-                {active.photo ? (
-                  <motion.div
-                    whileHover={{ scale: 1.08 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full shadow-[0_4px_14px_-4px_rgba(31,35,64,0.25)]"
+              <h3 className="font-display text-2xl font-semibold sm:text-3xl">{current.title}</h3>
+              <p className="mt-1 font-mono text-sm text-pink-deep">{current.doctor}</p>
+              <p className="mt-6 max-w-[55ch] text-ink-soft">
+                {current.blurb.split(" ").map((word, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ filter: "blur(8px)", opacity: 0, y: 4 }}
+                    animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut", delay: 0.015 * i }}
+                    className="inline-block"
                   >
-                    <Image
-                      src={active.photo}
-                      alt={active.doctor}
-                      width={56}
-                      height={56}
-                      className={`h-14 w-14 object-cover ${active.photoPosition ?? "object-[center_15%]"}`}
-                    />
-                  </motion.div>
-                ) : (
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-blush font-mono text-base font-semibold text-pink-deep">
-                    {initials(active.doctor)}
-                  </span>
-                )}
-                <p className="font-mono text-sm text-pink-deep">{active.doctor}</p>
-              </div>
-              <p className="max-w-[55ch] text-ink-soft">{active.blurb}</p>
+                    {word}&nbsp;
+                  </motion.span>
+                ))}
+              </p>
               <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">
-                {active.services.map((s) => (
+                {current.services.map((s) => (
                   <li key={s} className="flex items-start gap-2.5 text-[0.95rem]">
                     <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-pink" />
                     {s}
@@ -122,6 +128,25 @@ export function Pillars() {
               </ul>
             </motion.div>
           </AnimatePresence>
+
+          <div className="mt-10 flex gap-4">
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Previous speciality"
+              className="group flex h-9 w-9 items-center justify-center rounded-full bg-blush transition-colors hover:bg-pink-line"
+            >
+              <ArrowLeft className="h-4 w-4 text-ink transition-transform group-hover:-translate-x-0.5" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Next speciality"
+              className="group flex h-9 w-9 items-center justify-center rounded-full bg-blush transition-colors hover:bg-pink-line"
+            >
+              <ArrowRight className="h-4 w-4 text-ink transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

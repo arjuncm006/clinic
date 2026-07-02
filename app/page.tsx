@@ -1,5 +1,5 @@
-import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { ClassicHero } from "@/components/ClassicHero";
 import { Pillars } from "@/components/Pillars";
 import { Benefits } from "@/components/Benefits";
 import { VaccinationTool } from "@/components/VaccinationTool";
@@ -11,9 +11,9 @@ export default function Home() {
   return (
     <>
       <ScrollProgress />
-      <Header />
-      <main id="top" className="flex-1">
-        <Hero />
+      <Hero />
+      <main className="flex-1">
+        <ClassicHero />
         <Pillars />
         <Benefits />
         <VaccinationTool />
