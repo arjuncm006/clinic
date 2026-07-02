@@ -5,7 +5,6 @@ import { Benefits } from "@/components/Benefits";
 import { VaccinationTool } from "@/components/VaccinationTool";
 import { Footer } from "@/components/Footer";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { MobileCallBar } from "@/components/MobileCallBar";
 
 export default function Home() {
   return (
@@ -19,7 +18,6 @@ export default function Home() {
         <VaccinationTool />
       </main>
       <Footer />
-      <MobileCallBar />
     </>
   );
 }
